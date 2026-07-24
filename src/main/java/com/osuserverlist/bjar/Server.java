@@ -171,5 +171,7 @@ public class Server {
 
         private boolean ircEnabled;
         private int ircPort;
+
+        private boolean onlySendHelpDm;
     }
 }
