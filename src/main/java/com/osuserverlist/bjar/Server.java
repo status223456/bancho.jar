@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import com.osuserverlist.bjar.models.ConfigModels.ServerConfiguration;
 import com.osuserverlist.bjar.models.engine.ProductionLevel;
+import com.osuserverlist.bjar.irc.IrcGateway;
+import com.osuserverlist.bjar.irc.IrcServer;
 import com.osuserverlist.bjar.models.essentials.Player;
 import com.osuserverlist.bjar.modules.calculations.Performance;
 import com.osuserverlist.bjar.modules.main.Application.BuildInfo;
@@ -38,6 +40,7 @@ public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     public Player botPlayer;
+    public IrcServer ircServer;
     public OsuAPIHandler osuAPIHandler;
     public ServerConfiguration config = ServerConfiguration.load();
     public PlayerManager playerManager = new PlayerManager();
@@ -84,6 +87,16 @@ public class Server {
         app = configureJavalin();
 
         app.start(enviromentConfig.getPort());
+
+        if (enviromentConfig.isIrcEnabled()) {
+            ircServer = new IrcServer();
+            IrcGateway.setServer(ircServer);
+            try {
+                ircServer.start(enviromentConfig.getIrcPort());
+            } catch (Exception e) {
+                logger.error("Failed to start IRC gateway on port <{}>", enviromentConfig.getIrcPort(), e);
+            }
+        }
     }
 
     public void stop() {
@@ -91,6 +104,10 @@ public class Server {
         playerManager.getAll().forEach(player -> {
             player.sendPacket(new RestartPacket(10000));
         });
+
+        if (ircServer != null) {
+            ircServer.stop(); // Disconnect IRC clients and close the listener
+        }
 
         executor.shutdown(); // Gracefully shutdown the executor service
         app.stop(); // Gracefully stop the Javalin server
@@ -151,5 +168,8 @@ public class Server {
         private String searchEndpoint;
         private String dlEndpoint;
         private boolean ingameRegistrationEnabled;
+
+        private boolean ircEnabled;
+        private int ircPort;
     }
 }

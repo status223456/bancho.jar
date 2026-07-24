@@ -29,7 +29,7 @@
 - [ ] Web Redirects
 - [x] osu!Direct
 - [ ] BSS
-- [ ] IRC
+- [x] IRC
 - [ ] Tourney Client
 
 ### Backend
@@ -43,11 +43,41 @@
     - [x] Seasonal & Main Menu Icon
     - [x] .env for Secrets
 
+## IRC
+
+The server ships with a built-in IRC gateway so users can chat from HexChat, mIRC, or IRC bots.
+
+1. Enable it in `.env`:
+
+```env
+IRC_ENABLED=true
+IRC_PORT=6667
+```
+
+2. Connect with any IRC client:
+   - **Server**: your bancho host, port `IRC_PORT` (default `6667`)
+   - **Nick**: your account username (spaces replaced with `_`)
+   - **Server password (PASS)**: your account password (or its MD5 hash)
+
+Supported commands: `JOIN`, `PART`, `PRIVMSG` (channels & DMs, including `!commands`), `LIST`, `NAMES`, `TOPIC`, `WHOIS`, `WHO`, `ISON`, `MOTD`, `PING`/`PONG`, `QUIT`. Chat is fully bridged with in-game players in both directions.
+
+#### Spectating from IRC
+
+You can spectate a live player straight from IRC:
+- `JOIN #spec_<nick>` starts spectating that player (spaces in the nick become `_`). The osu! host and any fellow spectators are notified, and spectator chat is bridged both ways.
+- `PART` (any of the spectator channel names, e.g. `PART #spec_<nick>`) stops spectating. Disconnecting also stops it automatically.
+- Replay frames have no IRC representation, so you follow the session through chat rather than gameplay video.
+
+Notes:
+- `#lobby` and multiplayer channels are not joinable from IRC.
+- Logging in via IRC and the osu! client with the same account at the same time is possible, but a new osu! login kicks the existing session with the same user id.
+
 ### Key Directories
 
 | Directory | Description |
 |-----------|-------------|
 | `commands` | Bancho command handlers |
+| `irc` | IRC gateway (server, sessions, packet translation) |
 | `handlers` | Web handlers |
 | `models` | Data class files |
 | `modules` | Utility classes |
