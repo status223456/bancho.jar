@@ -51,6 +51,15 @@ public class Commands {
                         server.botPlayer.getId()));
             }
         }
+
+        /**
+         * Sends a message as a private message from BanchoBot to a single player,
+         * regardless of the channel the command was invoked in.
+         */
+        public void sendAnswerAsDm(Player recipient, String message) {
+            recipient.sendPacket(new SendMessagePacket(server.botPlayer.getUsername(), message,
+                    server.botPlayer.getUsername(), server.botPlayer.getId()));
+        }
     }
 
     public static class BanchoCommandHandler {
