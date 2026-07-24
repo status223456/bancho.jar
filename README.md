@@ -68,8 +68,16 @@ You can spectate a live player straight from IRC:
 - `PART` (any of the spectator channel names, e.g. `PART #spec_<nick>`) stops spectating. Disconnecting also stops it automatically.
 - Replay frames have no IRC representation, so you follow the session through chat rather than gameplay video.
 
+#### Multiplayer & lobby from IRC
+
+You can also take part in multiplayer chat from IRC (handy for tournament referees):
+- `JOIN #lobby` joins the multiplayer lobby chat.
+- `JOIN #mp_<id> [password]` (or `JOIN #multi_<id> [password]`) joins a live match's chat by its match id. If the match is password-protected, supply the password as the channel key. Messages are bridged to and from the in-game `#multiplayer` chat, and `!mp` commands work as usual.
+- `PART` the same channel name to leave.
+
 Notes:
-- `#lobby` and multiplayer channels are not joinable from IRC.
+- Joining a match channel from IRC does not take a player slot; you are a chat participant only.
+- You can be in only one match channel at a time; `PART` your current match before joining another.
 - Logging in via IRC and the osu! client with the same account at the same time is possible, but a new osu! login kicks the existing session with the same user id.
 
 ### Key Directories

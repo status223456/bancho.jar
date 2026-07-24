@@ -22,6 +22,7 @@ import com.osuserverlist.bjar.App;
 import com.osuserverlist.bjar.Server;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.models.essentials.Channel;
+import com.osuserverlist.bjar.models.essentials.Match;
 import com.osuserverlist.bjar.models.essentials.Player;
 import com.osuserverlist.bjar.models.osu.Privileges;
 import com.osuserverlist.bjar.modules.main.Commands;
@@ -462,6 +463,7 @@ public class IrcClient implements Runnable {
         sendNumeric("372", ":- Welcome to the " + serverName + " IRC gateway.");
         sendNumeric("372", ":- Use /LIST to view available channels.");
         sendNumeric("372", ":- Use /JOIN #spec_<nick> to spectate a live player, /PART to stop.");
+        sendNumeric("372", ":- Use /JOIN #lobby for the multiplayer lobby, or /JOIN #mp_<id> for a match.");
         sendNumeric("376", ":End of /MOTD command.");
     }
 
@@ -475,17 +477,28 @@ public class IrcClient implements Runnable {
             return;
         }
 
-        for (String channelName : params.get(0).split(",")) {
-            joinSingleChannel(channelName.trim());
+        String[] channels = params.get(0).split(",");
+        String[] keys = params.size() > 1 ? params.get(1).split(",") : new String[0];
+
+        for (int i = 0; i < channels.length; i++) {
+            String key = i < keys.length ? keys[i].trim() : null;
+            joinSingleChannel(channels[i].trim(), key);
         }
     }
 
-    private void joinSingleChannel(String channelName) {
+    private void joinSingleChannel(String channelName, String key) {
         Server server = App.server;
 
         // Spectator channels: "JOIN #spec_<nick>" starts spectating that player.
         if (isSpectatorChannelName(channelName)) {
             handleSpectateJoin(channelName);
+            return;
+        }
+
+        // Multiplayer match channels: "JOIN #multi_<id>" (or "#mp_<id>") joins a
+        // live match's chat, e.g. for a tournament referee.
+        if (isMatchChannelName(channelName)) {
+            handleMatchJoin(channelName, key);
             return;
         }
 
@@ -498,11 +511,6 @@ public class IrcClient implements Runnable {
 
         if (channel.getReadPriv() > player.getServerPrivileges()) {
             sendNumeric("473", channelName + " :Cannot join channel (insufficient privileges)");
-            return;
-        }
-
-        if (channel.getName().equals("#lobby")) {
-            sendNumeric("473", channelName + " :Cannot join #lobby from IRC");
             return;
         }
 
@@ -531,6 +539,12 @@ public class IrcClient implements Runnable {
             // Spectator channels: "PART #spec_<nick>" stops spectating.
             if (isSpectatorChannelName(channelName)) {
                 handleSpectatePart(channelName);
+                continue;
+            }
+
+            // Multiplayer match channels: "PART #multi_<id>" leaves the match chat.
+            if (isMatchChannelName(channelName)) {
+                handleMatchPart(channelName);
                 continue;
             }
 
@@ -600,9 +614,15 @@ public class IrcClient implements Runnable {
 
         // Spectator channels are keyed internally by host id ("#spec_<id>"),
         // but IRC users address them by host nick ("#spec_<nick>").
-        Channel channel = isSpectatorChannelName(target)
-                ? resolveSpectatorChannel(target)
-                : server.channelManager.get(target);
+        Channel channel;
+        if (isSpectatorChannelName(target)) {
+            channel = resolveSpectatorChannel(target);
+        } else if (isMatchChannelName(target)) {
+            String key = matchChannelKey(target);
+            channel = key == null ? null : server.channelManager.get(key);
+        } else {
+            channel = server.channelManager.get(target);
+        }
 
         if (channel == null) {
             sendNumeric("403", target + " :No such channel");
@@ -780,6 +800,105 @@ public class IrcClient implements Runnable {
     }
 
     // ------------------------------------------------------------------
+    // Multiplayer match channels (IRC users can chat in a live match,
+    // e.g. as a tournament referee)
+    // ------------------------------------------------------------------
+
+    /**
+     * Match channels are keyed internally as {@code #multi_<matchId>}. IRC
+     * users may address them as {@code #multi_<id>} or, following the common
+     * Bancho convention, {@code #mp_<id>}.
+     */
+    private boolean isMatchChannelName(String channelName) {
+        String lower = channelName.toLowerCase(Locale.ROOT);
+        return lower.startsWith("#multi_") || lower.startsWith("#mp_");
+    }
+
+    /** Normalises an IRC match-channel name to the internal {@code #multi_<id>} key. */
+    private String matchChannelKey(String channelName) {
+        String lower = channelName.toLowerCase(Locale.ROOT);
+        String suffix;
+        if (lower.startsWith("#multi_")) {
+            suffix = channelName.substring("#multi_".length());
+        } else if (lower.startsWith("#mp_")) {
+            suffix = channelName.substring("#mp_".length());
+        } else {
+            return null;
+        }
+        return suffix.matches("\\d+") ? "#multi_" + suffix : null;
+    }
+
+    /** The match channel this IRC user currently belongs to, or {@code null}. */
+    private Channel currentMatchChannel() {
+        for (Channel channel : App.server.channelManager.getAll()) {
+            if (channel.getName().toLowerCase(Locale.ROOT).startsWith("#multi_")
+                    && channel.getPlayers().contains(player)) {
+                return channel;
+            }
+        }
+        return null;
+    }
+
+    private void handleMatchJoin(String channelName, String key) {
+        String channelKey = matchChannelKey(channelName);
+        Channel channel = channelKey == null ? null : App.server.channelManager.get(channelKey);
+
+        if (channel == null) {
+            sendFromServerNotice("No such match. Use /join #multi_<id> (or #mp_<id>) of a live match.");
+            sendNumeric("403", channelName + " :No such channel");
+            return;
+        }
+
+        if (channel.getPlayers().contains(player)) {
+            return; // Already a member
+        }
+
+        // An IRC user may only be in one match channel at a time.
+        Channel current = currentMatchChannel();
+        if (current != null) {
+            sendFromServerNotice("You are already in " + current.getName()
+                    + " - PART it before joining another match.");
+            sendNumeric("405", channelName + " :You are already in a match channel");
+            return;
+        }
+
+        // Enforce the match password (if set), exactly like the osu! client does.
+        Match match = App.server.matchManager.getById(
+                (short) Integer.parseInt(channelKey.substring("#multi_".length())));
+        if (match != null) {
+            String password = match.getRoomPassword();
+            if (password != null && !password.isEmpty() && !password.equals(key)) {
+                sendNumeric("475", channelName + " :Cannot join channel (+k) - incorrect match password");
+                sendFromServerNotice("This match is password-protected. Use: /join " + channelName + " <password>");
+                return;
+            }
+        }
+
+        App.server.channelManager.forceJoinChannel(channelKey, player);
+
+        sendRawQuietly(":" + IrcServer.hostmask(player) + " JOIN :" + channelKey);
+        sendTopic(channel);
+        sendNames(channel);
+
+        logger.info("IRC user {} joined match channel {}", player, channelKey);
+    }
+
+    private void handleMatchPart(String channelName) {
+        String key = matchChannelKey(channelName);
+        Channel channel = key == null ? null : App.server.channelManager.get(key);
+
+        if (channel == null || !channel.getPlayers().contains(player)) {
+            sendNumeric("442", channelName + " :You're not on that channel");
+            return;
+        }
+
+        App.server.channelManager.forceLeaveChannel(key, player);
+        sendRawQuietly(":" + IrcServer.hostmask(player) + " PART :" + key);
+
+        logger.info("IRC user {} left match channel {}", player, key);
+    }
+
+    // ------------------------------------------------------------------
     // Spectating (IRC users can watch a live player's session)
     // ------------------------------------------------------------------
 
@@ -851,6 +970,16 @@ public class IrcClient implements Runnable {
                 return ircSpectatorName(host);
             }
         }
+
+        // osu! addresses all match chat by the "#multiplayer" alias; map it back
+        // to the concrete "#multi_<id>" channel this IRC user has joined.
+        if (banchoTarget.equalsIgnoreCase("#multiplayer")) {
+            Channel matchChannel = currentMatchChannel();
+            if (matchChannel != null) {
+                return matchChannel.getName();
+            }
+        }
+
         return banchoTarget;
     }
 
