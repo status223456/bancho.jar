@@ -1,0 +1,44 @@
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <conversionRule conversionWord="loggerHighlighter" converterClass="com.osuserverlist.bjar.modules.main.Logging$LoggerHighlighter" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>UTF-8</charset>
+            <pattern>%loggerHighlighter(%-5level) | %yellow(%d{yyyy-MM-dd HH:mm:ss}) | %loggerHighlighter(%msg) %n%loggerHighlighter(%ex)</pattern>
+        </encoder>
+    </appender>
+
+
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- File name is controlled by the rollingPolicy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- File path with date format -->
+            <fileNamePattern>logs/bjar-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory> <!-- Keeps log files for the last 30 days -->
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %thread %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Silence Jetty -->
+    <logger name="org.eclipse.jetty" level="ERROR" additivity="false"/>
+
+    <!-- Silence Javalin -->
+    <logger name="io.javalin" level="ERROR" additivity="false"/>
+
+    <!-- Hikari -->
+    <logger name="com.zaxxer.hikari" level="ERROR"/>
+
+    <!-- Ebean SQL debugging -->
+    <logger name="io.ebean.SQL" level="DEBUG"/>
+    <logger name="io.ebean.TXN" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ROLLING_FILE" />
+    </root>
+</configuration>
