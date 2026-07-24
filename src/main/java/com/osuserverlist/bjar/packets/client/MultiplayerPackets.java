@@ -543,9 +543,20 @@ public class MultiplayerPackets {
             slot.setStatus(SlotStatus.PLAYING.byteValue);
         }
 
+        // The match is now running. Persist this on the match so it is
+        // serialized in every subsequent match state (writeMatch -> isInProgress).
+        // osu!tourney relies on this flag to know a match has started and to
+        // begin spectating its players.
+        match.setInProgress(true);
+
         match.getPlayers().forEach(p -> {
             p.sendPacket(new MatchStartClientPacket(match));
         });
+
+        // Notify referees (the osu!tourney manager) and lobby watchers that the
+        // match is in progress with its slots now PLAYING, so they refresh and
+        // start spectating. MatchStart itself is only for the actual players.
+        match.enqueUpdate();
 
         return true;
     }
@@ -617,7 +628,9 @@ public class MultiplayerPackets {
         // ScoreFrame.id is the 5th byte (offset 4) of the payload.
         playData[4] = (byte) slot.intValue();
 
-        match.getPlayers().forEach(p -> p.sendPacket(new MatchScoreUpdatePacket(playData)));
+        // Relay live score frames to the whole match, including referees
+        // (the osu!tourney manager) so its scoreboard updates during play.
+        match.sendPacket(new MatchScoreUpdatePacket(playData));
 
         return true;
     }
@@ -665,6 +678,9 @@ public class MultiplayerPackets {
                 match.getSlot(p).setStatus(SlotStatus.NOT_READY.byteValue);
             });
 
+            // Match finished: clear the in-progress flag so referees/lobby see
+            // it return to an idle state.
+            match.setInProgress(false);
             match.enqueUpdate();
             
         }

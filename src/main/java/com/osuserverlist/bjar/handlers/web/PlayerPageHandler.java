@@ -30,10 +30,20 @@ public class PlayerPageHandler implements Handler {
     @Override
     public void handle(@NotNull Context ctx) {
         StringBuilder playerHtml = new StringBuilder();
-        
-        App.server.playerManager.getAll().forEach(player -> {
-            playerHtml.append(player.getUsername()).append(" (").append(player.getId()).append(")").append("<br>");
-        });
+
+        // Only list real, currently-online players. onlinePlayers also holds the
+        // bot, the auxiliary osu!tourney sessions (multiple connections share one
+        // account) and short-lived duplicate logins from the per-subdomain login
+        // flow, none of which should show up on the public players page. Dedupe
+        // by account id so an account is listed at most once.
+        java.util.Set<Integer> listed = new java.util.HashSet<>();
+        App.server.playerManager.getAll().stream()
+                .filter(player -> !player.isBot())
+                .filter(player -> !player.isTourneyClient())
+                .filter(player -> listed.add(player.getId()))
+                .forEach(player -> {
+                    playerHtml.append(player.getUsername()).append(" (").append(player.getId()).append(")").append("<br>");
+                });
 
         String html = indexTemplate.replace("%players%", playerHtml.toString())
         .replace("%header%", Application.HEADER)

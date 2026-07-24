@@ -58,9 +58,21 @@ public final class OsuVersionParser {
         TOURNAMENT;
 
         public static OsuStream fromString(String value) {
-            return value == null
-                    ? STABLE
-                    : OsuStream.valueOf(value.toUpperCase());
+            if (value == null) {
+                return STABLE;
+            }
+
+            switch (value.toLowerCase()) {
+                case "beta":
+                    return BETA;
+                case "cuttingedge":
+                    return CUTTINGEDGE;
+                case "tourney":
+                case "tournament":
+                    return TOURNAMENT;
+                default:
+                    return STABLE;
+            }
         }
     }
 }
