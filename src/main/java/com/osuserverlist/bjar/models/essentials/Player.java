@@ -48,6 +48,7 @@ public class Player {
     private Player spectating = null;
     private Match match = null;
     private boolean stealth = false;
+    private boolean tourneyClient = false;
     private boolean restricted = false;
     private boolean relaxEnabled = false;
     private boolean inLobby = false;

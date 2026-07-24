@@ -118,12 +118,7 @@ public class GeneralCommands extends BanchoCommandHandler {
             }
         }
 
-        String helpText = help.toString().stripTrailing();
-        if (session.server.enviromentConfig.isOnlySendHelpDm()) {
-            session.sendAnswerAsDm(sender, helpText);
-        } else {
-            session.sendAnswer(helpText);
-        }
+        session.sendAnswer(help.toString().stripTrailing());
     }
 
 }

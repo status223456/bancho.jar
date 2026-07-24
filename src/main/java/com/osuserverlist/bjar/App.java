@@ -109,8 +109,6 @@ public class App {
 
             config.setIrcEnabled(Boolean.parseBoolean(dotenv.get("IRC_ENABLED", "false")));
             config.setIrcPort(Integer.parseInt(dotenv.get("IRC_PORT", "6667")));
-
-            config.setOnlySendHelpDm(Boolean.parseBoolean(dotenv.get("ONLY_SEND_HELP_DM", "false")));
         });
 
         Runnable shutdownHook = () -> {
