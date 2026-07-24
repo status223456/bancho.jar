@@ -34,7 +34,7 @@
 
 ### Backend
 
-- [ ] API
+- [x] API
 - [ ] Action Notifications (Pubsub)
 - [ ] Plugin Framework
 - [x] Asset downloading
