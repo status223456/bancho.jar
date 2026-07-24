@@ -30,7 +30,7 @@
 - [x] osu!Direct
 - [ ] BSS
 - [x] IRC
-- [ ] Tourney Client
+- [x] Tourney Client
 
 ### Backend
 
