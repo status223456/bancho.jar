@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.osuserverlist.bjar.irc.IrcGateway;
 import com.osuserverlist.bjar.models.database.ChannelEntity;
 import com.osuserverlist.bjar.models.essentials.Channel;
 import com.osuserverlist.bjar.models.essentials.Player;
@@ -74,6 +75,8 @@ public class ChannelManager {
 
         channel.getPlayers().add(player);
         channel.setDirty(true);
+
+        IrcGateway.onChannelJoin(channel, player);
     }
 
     public void leaveChannel(String channelName, Player player) {
@@ -84,12 +87,15 @@ public class ChannelManager {
 
         channel.getPlayers().remove(player);
         channel.setDirty(true);
+
+        IrcGateway.onChannelLeave(channel, player);
     }
 
     public void forceJoinChannel(String channelName, Player player) {
         Channel channel = channels.get(channelName);
         if (channel != null) {
             channel.getPlayers().add(player);
+            IrcGateway.onChannelJoin(channel, player);
         }
     }
 
@@ -97,6 +103,7 @@ public class ChannelManager {
         Channel channel = channels.get(channelName);
         if (channel != null) {
             channel.getPlayers().remove(player);
+            IrcGateway.onChannelLeave(channel, player);
         }
     }
 }

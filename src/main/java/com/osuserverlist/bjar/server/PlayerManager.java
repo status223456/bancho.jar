@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 
 import com.osuserverlist.bjar.App;
 import com.osuserverlist.bjar.Server;
+import com.osuserverlist.bjar.irc.IrcPlayer;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.models.essentials.Channel;
 import com.osuserverlist.bjar.models.essentials.Match;
@@ -52,6 +53,10 @@ public class PlayerManager {
     }
 
     public void disconnect(Player player) {
+        if (player instanceof IrcPlayer ircPlayer) {
+            ircPlayer.getClient().detachAndClose("Disconnected by server");
+        }
+
         Server server = App.server;
         for (Channel channel : server.channelManager.getAll()) {
             if (channel.getPlayers().contains(player)) {
@@ -64,13 +69,29 @@ public class PlayerManager {
             server.matchManager.leaveMatch(match, player);
         }
 
-        for(Player p : onlinePlayers.values()) {
-            if(p.equals(player)) continue;
-            p.sendPacket(new UserQuitPacket(player.getId()));
+        // Tournament clients referee matches without occupying a slot; make sure
+        // they're removed from every match's referee set on disconnect.
+        for (Match m : server.matchManager.getAll()) {
+            m.getReferees().remove(player);
         }
 
         onlinePlayers.remove(player.getOsuToken());
-        apiIdentMap.remove(player.getApiIdent());
+
+        // Only drop the api-ident mapping if it still points at this session
+        // (tournament clients share one api ident across several sessions).
+        if (apiIdentMap.get(player.getApiIdent()) == player) {
+            apiIdentMap.remove(player.getApiIdent());
+        }
+
+        // Announce the quit only when the account has no remaining sessions.
+        boolean stillOnline = onlinePlayers.values().stream()
+                .anyMatch(p -> p.getId() == player.getId());
+
+        if (!stillOnline) {
+            for (Player p : onlinePlayers.values()) {
+                p.sendPacket(new UserQuitPacket(player.getId()));
+            }
+        }
     }
 
     public void addPriv(Player player, Privileges priv) {

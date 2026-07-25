@@ -154,7 +154,7 @@ public class OsuSubmitModularHandler implements Handler {
 
         int rank = ScoreRepository.getRank(beatmap.getMd5(), realGameMode.getValue(), s.getScore());
 
-        if (rank == 1 && Privileges.fromInt(p.getServerPrivileges()).contains(Privileges.UNRESTRICTED)) {
+        if (s.isPassed() && rank == 1 && Privileges.fromInt(p.getServerPrivileges()).contains(Privileges.UNRESTRICTED)) {
             String ann = String.format(
                     "\u0001ACTION achieved #1 on %s with %.2f%% for %.2fpp",
                     beatmap.toEmbed(),

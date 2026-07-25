@@ -86,7 +86,11 @@ public class LoginHandler {
 
         GeoResponse geoLocResponse = resolveGeoLocation(userEntity, loginResponse);
 
-        disconnectExistingSession(server, userEntity);
+        var incomingVersion = OsuVersionParser.parse(loginResponse.getBuildName());
+        boolean incomingIsTourney = incomingVersion != null
+                && incomingVersion.getStream() == OsuVersionParser.OsuStream.TOURNAMENT;
+
+        disconnectExistingSession(server, userEntity, incomingIsTourney);
 
         Player player = buildPlayer(userEntity, loginResponse, geoLocResponse);
 
@@ -171,8 +175,17 @@ public class LoginHandler {
         return geoLocResponse;
     }
 
-    private void disconnectExistingSession(Server server, UserEntity userEntity) {
-        Player existingPlayer = server.playerManager.getById(userEntity.getId());
+    private void disconnectExistingSession(Server server, UserEntity userEntity, boolean incomingIsTourney) {
+        // Tournament clients open several concurrent sessions under a single
+        // account, so a tourney login must never kick an existing session, and
+        // a normal login must not kick existing tournament sessions.
+        if (incomingIsTourney) {
+            return;
+        }
+
+        Player existingPlayer = server.playerManager.getByFilter(
+                p -> p.getId() == userEntity.getId() && !p.isTourneyClient() && !p.isBot());
+
         if (existingPlayer != null) {
             server.playerManager.disconnect(existingPlayer);
         }
@@ -189,7 +202,10 @@ public class LoginHandler {
         player.setFriendOnlyDms(loginResponse.isFriendOnlyDms());
         player.setUsername(userEntity.getName());
         player.setServerPrivileges(userEntity.getPrivileges());
-        player.setOsuVersion(OsuVersionParser.parse(loginResponse.getBuildName()));
+        var osuVersion = OsuVersionParser.parse(loginResponse.getBuildName());
+        player.setOsuVersion(osuVersion);
+        player.setTourneyClient(osuVersion != null
+                && osuVersion.getStream() == OsuVersionParser.OsuStream.TOURNAMENT);
 
         if (!Privileges.hasAny(userEntity.getPrivileges(), Privileges.VERIFIED)) {
             player.setServerPrivileges(userEntity.getPrivileges() | Privileges.VERIFIED.getValue());
@@ -312,7 +328,9 @@ public class LoginHandler {
             toNotify.add(p);
         });
 
-        if (toNotify.isEmpty()) {
+        // Tournament clients are invisible auxiliary sessions; don't announce
+        // them to everyone else as a newly connected user.
+        if (player.isTourneyClient() || toNotify.isEmpty()) {
             return;
         }
 

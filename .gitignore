@@ -13,3 +13,8 @@
 /.gradle/
 /build
 /bin
+
+# Runtime data, logs, configs (generated at runtime — do not commit)
+/data/
+/logs/
+/.config/

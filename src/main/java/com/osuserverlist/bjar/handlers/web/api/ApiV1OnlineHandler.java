@@ -1,0 +1,72 @@
+package com.osuserverlist.bjar.handlers.web.api;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
+
+import com.osuserverlist.bjar.App;
+import com.osuserverlist.bjar.modules.main.WebEngine.Host;
+import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
+import com.osuserverlist.bjar.modules.main.WebEngine.Path;
+
+import io.javalin.http.Context;
+import io.javalin.http.Handler;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
+
+/**
+ * GET /api/v1/online — the list of players currently online (bots and auxiliary
+ * tournament-client sessions excluded, deduplicated by user id).
+ */
+@Host("api.")
+@Path("/api/v1/online")
+@HttpMethod("GET")
+public class ApiV1OnlineHandler implements Handler {
+
+    @Override
+    @OpenApi(
+        summary = "List online players",
+        description = "Players currently online (bots and auxiliary tournament sessions excluded, deduplicated by id).",
+        tags = { "v1" },
+        queryParams = {
+            @OpenApiParam(name = "offset", type = Integer.class, description = "Zero-based offset into the result set (default 0)."),
+            @OpenApiParam(name = "limit", type = Integer.class, description = "Maximum results to return, 1-100 (default 50).")
+        },
+        responses = {
+            @OpenApiResponse(status = "200", content = { @OpenApiContent(from = ApiDto.PaginatedOnline.class) }, description = "Paginated list of online players")
+        },
+        path = "/api/v1/online"
+    )
+    public void handle(@NotNull Context ctx) {
+        int offset = ApiPagination.offset(ctx);
+        int limit = ApiPagination.limit(ctx);
+
+        Set<Integer> seen = new HashSet<>();
+        List<Map<String, Object>> all = App.server.playerManager.getAll().stream()
+                .filter(player -> !player.isBot())
+                .filter(player -> !player.isTourneyClient())
+                .filter(player -> seen.add(player.getId()))
+                .map(player -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", player.getId());
+                    row.put("name", player.getUsername());
+                    return row;
+                })
+                .collect(Collectors.toList());
+
+        long count = all.size();
+        List<Map<String, Object>> page = all.stream()
+                .skip(offset)
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        ctx.json(ApiPagination.envelope(offset, limit, count, page));
+    }
+}

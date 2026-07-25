@@ -42,6 +42,7 @@ public class Match {
 
     MatchSlot[] slots = new MatchSlot[MAX_SLOTS];
     Set<Player> players = ConcurrentHashMap.newKeySet();
+    Set<Player> referees = ConcurrentHashMap.newKeySet();
     ScheduledFuture<?> loadTimeoutTask;
 
     public String toString() {
@@ -84,6 +85,7 @@ public class Match {
 
     public void sendPacket(ServerPacket packet) {
         players.forEach(p -> p.sendPacket(packet));
+        referees.forEach(p -> p.sendPacket(packet));
     }
 
     public void enqueUpdate() {
@@ -92,7 +94,11 @@ public class Match {
         players.forEach(p -> {
             p.sendPacket(new MatchUpdatePacket(this));
         });
-        
+
+        referees.forEach(p -> {
+            p.sendPacket(new MatchUpdatePacket(this));
+        });
+
         server.playerManager.getAll().stream().filter(p -> p.isInLobby()).forEach(p -> {
             p.sendPacket(new MatchUpdatePacket(this));
         });

@@ -138,8 +138,13 @@ tasks.jar {
 }
 
 tasks.shadowJar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("server-shaded.jar")
+
+    // Merge META-INF/services files from all dependencies so ServiceLoader
+    // providers (e.g. Ebean database platforms like MySQL) are not lost.
+    // Note: do NOT set duplicatesStrategy = EXCLUDE here - it drops duplicate
+    // service files before mergeServiceFiles() can merge them.
+    mergeServiceFiles()
 
     manifest {
         attributes["Main-Class"] = "com.osuserverlist.bjar.App"
