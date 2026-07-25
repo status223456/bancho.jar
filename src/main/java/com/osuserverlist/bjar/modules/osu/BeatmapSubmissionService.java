@@ -263,6 +263,68 @@ public final class BeatmapSubmissionService {
         return result;
     }
 
+    /**
+     * Re-extracts one difficulty from the package of its set.
+     *
+     * <p>The loose {@code .osu} files under {@code data/maps} are a cache: the
+     * authoritative copy is the osz2 package kept for every submitted set. When a
+     * loose file goes missing &mdash; a half-finished upload, a cleaned data
+     * directory, a set imported before extraction existed &mdash; scoring on that
+     * map would otherwise break permanently. Rebuilding it from the package costs
+     * one read and makes the loss self-healing.</p>
+     *
+     * @return the file contents, also written back to disk, or {@code null} when the
+     *         package cannot supply it.
+     */
+    public static byte[] restoreBeatmapFile(long beatmapId) {
+        if (!isLocalId(beatmapId)) {
+            return null;
+        }
+
+        BeatmapEntity beatmap = BeatmapRepository.findById(beatmapId);
+
+        if (beatmap == null || beatmap.getSetId() == null) {
+            return null;
+        }
+
+        int setId = beatmap.getSetId().intValue();
+
+        if (!BssStorage.hasOsz2(setId)) {
+            return null;
+        }
+
+        try {
+            Package pkg = Package.fromBytes(BssStorage.readOsz2(setId));
+
+            for (PackageFile file : pkg.getFiles()) {
+                if (!file.isBeatmap()) {
+                    continue;
+                }
+
+                Integer id = pkg.getBeatmapIds().get(file.getFilename());
+
+                if (id == null || id.longValue() != beatmapId) {
+                    continue;
+                }
+
+                byte[] content = file.getContent();
+
+                if (content == null || content.length == 0) {
+                    return null;
+                }
+
+                BssStorage.writeBeatmap(beatmapId, content);
+
+                return content;
+            }
+        } catch (IOException | RuntimeException e) {
+            logger.error("BSS: failed to restore map <{}> from the package of set {}",
+                    beatmapId, setId, e);
+        }
+
+        return null;
+    }
+
     private static boolean belongsToSet(long beatmapId, int setId) {
         BeatmapEntity existing = BeatmapRepository.findById(beatmapId);
 
@@ -288,6 +350,11 @@ public final class BeatmapSubmissionService {
     public static void ingest(BssMapsetEntity mapset, UserEntity user, byte[] osz2Bytes) throws BssException {
         try {
             Package pkg = Package.fromBytes(osz2Bytes);
+
+            // Keep the bytes exactly as the client produced them. The next
+            // incremental upload is a diff against this, not against the
+            // re-exported copy stored below.
+            BssStorage.writePatchBase(mapset.getSetId(), osz2Bytes);
 
             pkg.setBeatmapSetID(mapset.getSetId());
 
@@ -522,14 +589,30 @@ public final class BeatmapSubmissionService {
     }
 
     /**
-     * Applies an incremental (bsdiff) upload on top of the stored package.
+     * Applies an incremental (bsdiff) upload on top of the package the client
+     * already has.
+     *
+     * <p>The diff is computed by the editor against its own local osz2, so it can
+     * only be applied to identical bytes. That is the copy saved by
+     * {@link #ingest}, not the canonical package, which is a re-export produced
+     * after the beatmap ids were rewritten and therefore differs byte for
+     * byte.</p>
      */
     public static byte[] applyPatch(int setId, byte[] patch) throws BssException {
+        if (!BssStorage.hasPatchBase(setId)) {
+            // Sets uploaded before the base was kept, or a wiped data directory.
+            // There is nothing to patch against and guessing would corrupt the set.
+            logger.warn("BSS: no patch base for set {}; the client must submit the full package",
+                    setId);
+
+            throw new BssException(BssStatusCode.INVALID_PACKAGE);
+        }
+
         try {
-            byte[] source = BssStorage.readOsz2(setId);
+            byte[] source = BssStorage.readPatchBase(setId);
 
             return PatchUtil.applyBsdiffPatch(source, patch);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             logger.error("BSS: failed to apply the incremental patch of set {}", setId, e);
             throw new BssException(BssStatusCode.INVALID_PACKAGE);
         }

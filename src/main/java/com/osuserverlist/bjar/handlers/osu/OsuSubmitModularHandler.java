@@ -102,7 +102,20 @@ public class OsuSubmitModularHandler implements Handler {
         s.setBeatmapId(beatmap.getId());
 
         byte[] mapData = OsuMapDownloader.downloadMap(s.getBeatmapId());
-        double pp = server.performance.calculate(s, mapData);
+
+        // A map file we cannot read must not cost the player their play. Scoring
+        // it as zero pp keeps the submission, the leaderboard entry and the score
+        // counters intact; failing here would answer with a 500 that the client
+        // retries forever, losing the score anyway.
+        double pp = 0.0;
+
+        if (mapData == null || mapData.length == 0) {
+            logger.warn("No .osu file for map <{}>; storing the score of {} without pp",
+                    s.getBeatmapId(), p);
+        } else {
+            pp = server.performance.calculate(s, mapData);
+        }
+
         s.setPp(pp);
         // Keep the checksum the client computed for this play. It covers the
         // score itself, which makes it a reliable marker of a replayed

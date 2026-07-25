@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
  * On-disk storage layout of the Beatmap Submission System.
  *
  * <pre>
- * data/osz2/{setId}.osz2          encrypted package, source of truth &amp; patch base
+ * data/osz2/{setId}.osz2          encrypted package, source of truth
+ * data/osz2/{setId}.base.osz2     last bytes the client uploaded, patch base
  * data/osz/{setId}.osz            plain package served to osu!direct (with video)
  * data/osz/{setId}n.osz           plain package without video files
  * data/maps/{beatmapId}.osu       individual difficulties (shared with OsuMapDownloader)
@@ -43,6 +44,17 @@ public final class BssStorage {
         return OSZ2_DIRECTORY.resolve(setId + ".osz2");
     }
 
+    /**
+     * The exact package the client last sent us.
+     *
+     * <p>Kept next to the canonical copy because incremental uploads are byte
+     * diffs against what the client itself holds, and the canonical copy is a
+     * re-export whose bytes differ.</p>
+     */
+    public static Path patchBasePath(int setId) {
+        return OSZ2_DIRECTORY.resolve(setId + ".base.osz2");
+    }
+
     public static Path oszPath(int setId, boolean noVideo) {
         return OSZ_DIRECTORY.resolve(setId + (noVideo ? "n" : "") + ".osz");
     }
@@ -55,6 +67,10 @@ public final class BssStorage {
         return Files.exists(osz2Path(setId));
     }
 
+    public static boolean hasPatchBase(int setId) {
+        return Files.exists(patchBasePath(setId));
+    }
+
     public static boolean hasOsz(int setId, boolean noVideo) {
         return Files.exists(oszPath(setId, noVideo));
     }
@@ -63,12 +79,20 @@ public final class BssStorage {
         return Files.readAllBytes(osz2Path(setId));
     }
 
+    public static byte[] readPatchBase(int setId) throws IOException {
+        return Files.readAllBytes(patchBasePath(setId));
+    }
+
     public static byte[] readOsz(int setId, boolean noVideo) throws IOException {
         return Files.readAllBytes(oszPath(setId, noVideo));
     }
 
     public static void writeOsz2(int setId, byte[] data) throws IOException {
         writeAtomically(osz2Path(setId), data);
+    }
+
+    public static void writePatchBase(int setId, byte[] data) throws IOException {
+        writeAtomically(patchBasePath(setId), data);
     }
 
     public static void writeOsz(int setId, boolean noVideo, byte[] data) throws IOException {
@@ -90,6 +114,7 @@ public final class BssStorage {
     public static void deleteSet(int setId) {
         try {
             Files.deleteIfExists(osz2Path(setId));
+            Files.deleteIfExists(patchBasePath(setId));
             Files.deleteIfExists(oszPath(setId, false));
             Files.deleteIfExists(oszPath(setId, true));
         } catch (IOException e) {
