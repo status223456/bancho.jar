@@ -37,6 +37,9 @@ public final class ApiAuth {
     /** Acting on beatmaps: ranking, loving, disqualifying. */
     public static final String SCOPE_BEATMAPS = "beatmaps";
 
+    /** Managing your own account: profile edits, email, password, deletion. */
+    public static final String SCOPE_PROFILE = "profile";
+
     /** Acting on the server itself: handing out rights, wiping data, renaming accounts. */
     public static final String SCOPE_ADMIN = "admin";
 
@@ -141,6 +144,17 @@ public final class ApiAuth {
     public static boolean requirePermission(Context ctx, OAuthToken token, String scope,
             Privileges privilege) {
         return requireScope(ctx, token, scope) && requirePrivilege(ctx, token, privilege);
+    }
+
+    /**
+     * Changing your own account.
+     *
+     * <p>The privilege checked here is {@code UNRESTRICTED}, which every ordinary account
+     * holds and a restricted one does not. Restricted players can still read their own data
+     * and delete nothing but their session; they cannot quietly rewrite their profile.</p>
+     */
+    public static boolean requireProfile(Context ctx, OAuthToken token) {
+        return requirePermission(ctx, token, SCOPE_PROFILE, Privileges.UNRESTRICTED);
     }
 
     /** Acting on players: restrict, unrestrict, alert, profile corrections. */

@@ -98,7 +98,8 @@ RFC 6749 shape: `{"error": "invalid_grant", "error_description": "…"}`.
 
 | Scope | Grants |
 | --- | --- |
-| `identify` | Read your own identity (`userinfo`). Default when nothing is requested |
+| `identify` | Read your own identity (`userinfo`, `me`). Default when nothing is requested |
+| `profile` | Change your own account: profile, email, password, deletion |
 | `moderation` | Acting on players: restrict, unrestrict, alert, country |
 | `beatmaps` | Acting on beatmaps: status changes |
 | `admin` | Acting on the server: wipe, donator, privileges, rename |
@@ -110,6 +111,34 @@ Every protected endpoint checks two independent things: the **scope** the token 
 and the **privilege** the account holds. They answer different questions — what this token may
 do on your behalf, and who you are on the server. A moderation bot asks for `moderation` only,
 so a leak of its token cannot rank a map or hand out rights.
+
+## Self service endpoints
+
+Everything a signed in player may do to their own account. None of these take a user id: the
+account is always the one behind the access token, so they cannot be aimed at anybody else.
+
+| Path | Method | Scope | Body |
+| --- | --- | --- | --- |
+| `/api/v1/me` | `GET` | `identify` | — |
+| `/api/v1/me/update` | `POST` | `profile` | any of `userpage_content`, `preferred_mode`, `play_style`, `custom_badge_name`, `custom_badge_icon` |
+| `/api/v1/me/email` | `POST` | `profile` | `current_password`, `email` |
+| `/api/v1/me/password` | `POST` | `profile` | `current_password`, `new_password` |
+| `/api/v1/me/delete` | `POST` | `profile` | `current_password`, `confirm: true` |
+
+- `GET /api/v1/me` returns everything `get_player_details` does, plus the private fields:
+  email, silence and donor expiry, userpage, badge and clan rank.
+- Writes additionally require the `UNRESTRICTED` privilege, so a restricted account can read
+  its data and leave, but not rewrite its profile.
+- Sending `null` clears `userpage_content` and the badge fields. Omitted fields are left alone,
+  and a body that changes nothing answers `400`.
+- Custom badges require `SUPPORTER` or `PREMIUM`, matching the in-game rule.
+- Email, password and deletion re-check `current_password` (or `current_password_md5`), so a
+  stolen access token alone cannot take an account over. A wrong password answers `401`.
+- Changing the password or deleting the account revokes the current token family, expires both
+  cookies and disconnects every live bancho session. Access tokens issued to *other* sessions
+  survive until they expire; that is the trade-off for keeping them un-indexed and short lived.
+- Deletion is permanent and removes scores, per-mode stats, friend and block rows in both
+  directions, achievements and every leaderboard entry.
 
 ## Protected endpoints
 
@@ -192,4 +221,5 @@ cookies.
 | `modules/admin/AdminPrivileges.java` | Privilege name resolution |
 | `handlers/api/ApiAuth.java` | Bearer lookup, scope and privilege checks, body parsing |
 | `handlers/api/OAuthRoutes.java` | Token, revoke, userinfo |
+| `handlers/api/SelfApiRoutes.java` | Self service: read, profile, email, password, deletion |
 | `handlers/api/AdminApiRoutes.java` | The ten protected endpoints |

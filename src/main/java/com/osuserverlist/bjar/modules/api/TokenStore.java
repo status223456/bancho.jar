@@ -341,6 +341,20 @@ public final class TokenStore {
         revokeFamily(record.getFamilyId(), token);
     }
 
+    /**
+     * Revokes a whole family, ending the refresh chain that descends from one login.
+     *
+     * <p>Access tokens already handed out keep working until they expire on their own; they
+     * are not indexed by family, and their lifetime is short by design.</p>
+     */
+    public static void revokeFamily(String familyId) {
+        if (familyId == null || familyId.isBlank()) {
+            return;
+        }
+
+        safeDelete(FAMILY_PREFIX + familyId);
+    }
+
     private static void revokeFamily(String familyId, String token) {
         safeDelete(REFRESH_PREFIX + token);
 
