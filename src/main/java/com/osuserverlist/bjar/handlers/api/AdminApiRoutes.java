@@ -25,8 +25,10 @@ import io.javalin.http.Handler;
  * against the database and only then touches anything. The acting administrator's id is
  * passed down to {@link AdminActions} so each change is attributable in the log.</p>
  *
- * <p>Staff level covers day to day moderation. Actions that can hand out rights or destroy
- * data require administrator level, and nobody may target their own account with them.</p>
+ * <p>Each endpoint asks for the one capability it actually needs: moderation for anything
+ * aimed at players, nomination for anything aimed at beatmaps, administration for handing out
+ * rights or destroying data. None of them implies another, and nobody may target their own
+ * account with the destructive ones.</p>
  */
 public final class AdminApiRoutes {
 
@@ -46,7 +48,7 @@ public final class AdminApiRoutes {
         @Override
         public void handle(@NotNull Context ctx) {
             OAuthToken session = ApiAuth.require(ctx);
-            if (session == null || !ApiAuth.requireStaff(ctx, session)) {
+            if (session == null || !ApiAuth.requireModeration(ctx, session)) {
                 return;
             }
 
@@ -86,7 +88,7 @@ public final class AdminApiRoutes {
         @Override
         public void handle(@NotNull Context ctx) {
             OAuthToken session = ApiAuth.require(ctx);
-            if (session == null || !ApiAuth.requireStaff(ctx, session)) {
+            if (session == null || !ApiAuth.requireModeration(ctx, session)) {
                 return;
             }
 
@@ -174,7 +176,7 @@ public final class AdminApiRoutes {
         @Override
         public void handle(@NotNull Context ctx) {
             OAuthToken session = ApiAuth.require(ctx);
-            if (session == null || !ApiAuth.requireStaff(ctx, session)) {
+            if (session == null || !ApiAuth.requireModeration(ctx, session)) {
                 return;
             }
 
@@ -339,12 +341,7 @@ public final class AdminApiRoutes {
         @Override
         public void handle(@NotNull Context ctx) {
             OAuthToken session = ApiAuth.require(ctx);
-            if (session == null) {
-                return;
-            }
-
-            if (!ApiAuth.requireAny(ctx, session, Privileges.NOMINATOR, Privileges.MODERATOR,
-                    Privileges.ADMINISTRATOR, Privileges.DEVELOPER)) {
+            if (session == null || !ApiAuth.requireNominator(ctx, session)) {
                 return;
             }
 
@@ -390,7 +387,7 @@ public final class AdminApiRoutes {
         @Override
         public void handle(@NotNull Context ctx) {
             OAuthToken session = ApiAuth.require(ctx);
-            if (session == null || !ApiAuth.requireStaff(ctx, session)) {
+            if (session == null || !ApiAuth.requireModeration(ctx, session)) {
                 return;
             }
 

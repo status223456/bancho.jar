@@ -1,6 +1,7 @@
 package com.osuserverlist.bjar.handlers.api;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,7 +28,16 @@ public final class ApiAuth {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    /** Scope required by the moderation endpoints. */
+    /** Read the caller's own identity. Granted to every token by default. */
+    public static final String SCOPE_IDENTIFY = "identify";
+
+    /** Acting on players: restricts, unrestricts, broadcasts, profile corrections. */
+    public static final String SCOPE_MODERATION = "moderation";
+
+    /** Acting on beatmaps: ranking, loving, disqualifying. */
+    public static final String SCOPE_BEATMAPS = "beatmaps";
+
+    /** Acting on the server itself: handing out rights, wiping data, renaming accounts. */
     public static final String SCOPE_ADMIN = "admin";
 
     private ApiAuth() {
@@ -107,16 +117,45 @@ public final class ApiAuth {
         return false;
     }
 
-    /** Staff level: moderators and above, plus the admin scope. */
-    public static boolean requireStaff(Context ctx, OAuthToken token) {
-        return requireScope(ctx, token, SCOPE_ADMIN)
-                && requireAny(ctx, token, Privileges.MODERATOR, Privileges.ADMINISTRATOR, Privileges.DEVELOPER);
+    /** Ensures the caller holds one specific privilege. Writes {@code 403} when they do not. */
+    public static boolean requirePrivilege(Context ctx, OAuthToken token, Privileges privilege) {
+        if (Privileges.has(token.getPrivileges(), privilege)) {
+            return true;
+        }
+
+        ctx.status(403).json(ApiPagination.error("This action requires the "
+                + privilege.name().toLowerCase(Locale.ROOT) + " privilege."));
+
+        return false;
     }
 
-    /** Administrator level, for actions that can hand out rights or destroy data. */
+    /**
+     * Checks one capability: the token must carry {@code scope} and the account behind it must
+     * hold {@code privilege}.
+     *
+     * <p>Capabilities are not a ladder. Moderating players says nothing about beatmaps, and
+     * being an administrator does not quietly include either of them. Someone who needs two
+     * capabilities is given two privileges, which is exactly how the in-game side already
+     * works: the privilege field is a bitmask, not a rank.</p>
+     */
+    public static boolean requirePermission(Context ctx, OAuthToken token, String scope,
+            Privileges privilege) {
+        return requireScope(ctx, token, scope) && requirePrivilege(ctx, token, privilege);
+    }
+
+    /** Acting on players: restrict, unrestrict, alert, profile corrections. */
+    public static boolean requireModeration(Context ctx, OAuthToken token) {
+        return requirePermission(ctx, token, SCOPE_MODERATION, Privileges.MODERATOR);
+    }
+
+    /** Acting on beatmaps: this is the nominators' job, not the moderators'. */
+    public static boolean requireNominator(Context ctx, OAuthToken token) {
+        return requirePermission(ctx, token, SCOPE_BEATMAPS, Privileges.NOMINATOR);
+    }
+
+    /** Acting on the server: handing out rights, wiping data, renaming accounts. */
     public static boolean requireAdmin(Context ctx, OAuthToken token) {
-        return requireScope(ctx, token, SCOPE_ADMIN)
-                && requireAny(ctx, token, Privileges.ADMINISTRATOR, Privileges.DEVELOPER);
+        return requirePermission(ctx, token, SCOPE_ADMIN, Privileges.ADMINISTRATOR);
     }
 
     /** Writes an OAuth2 style {@code 401}. */
