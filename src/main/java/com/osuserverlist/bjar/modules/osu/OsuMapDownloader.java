@@ -32,6 +32,13 @@ public final class OsuMapDownloader {
                 return Files.readAllBytes(mapFile);
             }
 
+            // Beatmaps submitted through the BSS only exist on this server.
+            // Asking osu.ppy.sh for them would always 404, so stop here.
+            if (BeatmapSubmissionService.isLocalId(mapId)) {
+                logger.warn("Locally submitted map <{}> is missing from disk", mapId);
+                return null;
+            }
+
             Request request = new Request.Builder()
                     .url("https://osu.ppy.sh/osu/" + mapId)
                     .build();
