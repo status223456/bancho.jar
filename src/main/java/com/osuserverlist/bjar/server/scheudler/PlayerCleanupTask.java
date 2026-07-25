@@ -20,7 +20,7 @@ public class PlayerCleanupTask implements Runnable {
     public void run() {
         Server server = App.server;
 
-        server.playerManager.getAll().forEach(player -> {
+        server.playerManager.getAllSessions().forEach(player -> {
             if (player.isBot()) {
                 return;
             }

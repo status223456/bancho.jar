@@ -104,7 +104,7 @@ public class UserStatsPresencePackets {
         player.setGameMode(gameMode);
         player.setBeatmapId(beatmapId);
 
-        for (Player onlinePlayer : App.server.playerManager.getAll()) {
+        for (Player onlinePlayer : App.server.playerManager.getAllSessions()) {
             onlinePlayer.sendPacket(new UserStatsPacket(player));
         }
 

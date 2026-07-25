@@ -13,7 +13,7 @@ public class SendChannelInfoTask implements Runnable {
         server.channelManager.getAll().forEach(channel -> {
             if(!channel.isDirty()) return;
 
-            server.playerManager.getAll().forEach(player -> {
+            server.playerManager.getAllSessions().forEach(player -> {
                 if(!channel.isVisible()) {
                     if(!channel.getPlayers().contains(player)) {
                         return; // don't send channel info for invisible channels to players that aren't in the channel

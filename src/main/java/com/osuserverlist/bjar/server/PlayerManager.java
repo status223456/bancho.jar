@@ -2,6 +2,7 @@ package com.osuserverlist.bjar.server;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -20,16 +21,18 @@ import com.osuserverlist.bjar.packets.server.UserServerPackets.UserQuitPacket;
 import com.osuserverlist.bjar.repos.UserRepository;
 
 public class PlayerManager {
-    private final Map<String, Player> onlinePlayers = new ConcurrentHashMap<>();
+    private final Map<String, Player> onlineSessions = new ConcurrentHashMap<>();
     private final Map<String, Player> apiIdentMap = new ConcurrentHashMap<>();
+    private final Set<Player> onlinePlayers = ConcurrentHashMap.newKeySet();
     
     public void add(Player player) {
-        onlinePlayers.put(player.getOsuToken(), player);
+        onlineSessions.put(player.getOsuToken(), player);
         apiIdentMap.put(player.getApiIdent(), player);
+        onlinePlayers.add(player);
     }
 
     public Player get(String osuToken) {
-        return onlinePlayers.get(osuToken);
+        return onlineSessions.get(osuToken);
     }
 
     public Player getByApiIdent(String apiIdent) {
@@ -37,7 +40,7 @@ public class PlayerManager {
     }
 
     public Player getByFilter(Predicate<Player> filter) {
-        return onlinePlayers.values().stream().filter(filter).findFirst().orElse(null);
+        return onlineSessions.values().stream().filter(filter).findFirst().orElse(null);
     }
 
     public Player getById(int id) {
@@ -48,8 +51,8 @@ public class PlayerManager {
         return getByFilter(p -> p.getUsername().equalsIgnoreCase(username));
     }
 
-    public Collection<Player> getAll() {
-        return onlinePlayers.values();
+    public Collection<Player> getAllSessions() {
+        return onlineSessions.values();
     }
 
     public void disconnect(Player player) {
@@ -75,7 +78,10 @@ public class PlayerManager {
             m.getReferees().remove(player);
         }
 
-        onlinePlayers.remove(player.getOsuToken());
+        onlineSessions.remove(player.getOsuToken());
+        if(!onlineSessions.containsValue(player)) {
+            onlinePlayers.remove(player);
+        }
 
         // Only drop the api-ident mapping if it still points at this session
         // (tournament clients share one api ident across several sessions).
@@ -84,14 +90,18 @@ public class PlayerManager {
         }
 
         // Announce the quit only when the account has no remaining sessions.
-        boolean stillOnline = onlinePlayers.values().stream()
+        boolean stillOnline = onlineSessions.values().stream()
                 .anyMatch(p -> p.getId() == player.getId());
 
         if (!stillOnline) {
-            for (Player p : onlinePlayers.values()) {
+            for (Player p : onlineSessions.values()) {
                 p.sendPacket(new UserQuitPacket(player.getId()));
             }
         }
+    }
+
+    public int getOnlineCount() {
+        return onlineSessions.size();
     }
 
     public void addPriv(Player player, Privileges priv) {

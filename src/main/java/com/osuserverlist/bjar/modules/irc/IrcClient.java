@@ -417,7 +417,7 @@ public class IrcClient implements Runnable {
         registered = true;
 
         // Make the IRC user visible to osu! clients.
-        for (Player other : server.playerManager.getAll()) {
+        for (Player other : server.playerManager.getAllSessions()) {
             if (other == player) {
                 continue;
             }

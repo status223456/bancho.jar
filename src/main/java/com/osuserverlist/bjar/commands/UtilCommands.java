@@ -32,7 +32,7 @@ public class UtilCommands extends BanchoCommandHandler {
 
         String message = String.join(" ", args);
 
-        session.server.playerManager.getAll().forEach(player -> {
+        session.server.playerManager.getAllSessions().forEach(player -> {
             player.sendPacket(new NotificationPacket(message));
         });
 

@@ -317,7 +317,7 @@ public class LoginHandler {
     private void notifyOtherPlayers(Server server, Player player) {
         List<Player> toNotify = new ArrayList<>();
 
-        server.playerManager.getAll().forEach(p -> {
+        server.playerManager.getAllSessions().forEach(p -> {
             if (p.getId() == player.getId()) {
                 return;
             }

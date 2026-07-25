@@ -37,7 +37,7 @@ public class StatsAPIHandler implements Handler {
     public void handle(@NotNull Context ctx) throws Exception {
         
         StatsResponse response = new StatsResponse();
-        response.setOnlinePlayers(App.server.playerManager.getAll().size());
+        response.setOnlinePlayers(App.server.playerManager.getOnlineCount());
         response.setTotalPlayers(UserRepository.count());
         response.setMaps(BeatmapRepository.count());
         response.setScores(ScoreRepository.count());

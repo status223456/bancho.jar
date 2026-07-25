@@ -101,7 +101,7 @@ public class Server {
 
     public void stop() {
         Long startTime = System.currentTimeMillis();
-        playerManager.getAll().forEach(player -> {
+        playerManager.getAllSessions().forEach(player -> {
             player.sendPacket(new RestartPacket(10000));
         });
 

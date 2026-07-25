@@ -1,6 +1,8 @@
 package com.osuserverlist.bjar.handlers.web;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -31,14 +33,8 @@ public class PlayerPageHandler implements Handler {
     public void handle(@NotNull Context ctx) {
         StringBuilder playerHtml = new StringBuilder();
 
-        // Only list real, currently-online players. onlinePlayers also holds the
-        // bot, the auxiliary osu!tourney sessions (multiple connections share one
-        // account) and short-lived duplicate logins from the per-subdomain login
-        // flow, none of which should show up on the public players page. Dedupe
-        // by account id so an account is listed at most once.
-        java.util.Set<Integer> listed = new java.util.HashSet<>();
-        App.server.playerManager.getAll().stream()
-                .filter(player -> !player.isBot())
+        Set<Integer> listed = new HashSet<>();
+        App.server.playerManager.getAllSessions().stream()
                 .filter(player -> !player.isTourneyClient())
                 .filter(player -> listed.add(player.getId()))
                 .forEach(player -> {

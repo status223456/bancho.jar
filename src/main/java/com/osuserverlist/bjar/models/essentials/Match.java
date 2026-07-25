@@ -99,7 +99,7 @@ public class Match {
             p.sendPacket(new MatchUpdatePacket(this));
         });
 
-        server.playerManager.getAll().stream().filter(p -> p.isInLobby()).forEach(p -> {
+        server.playerManager.getAllSessions().stream().filter(p -> p.isInLobby()).forEach(p -> {
             p.sendPacket(new MatchUpdatePacket(this));
         });
     }

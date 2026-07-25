@@ -94,7 +94,7 @@ public class UserServerPackets {
     public static  final class UserPresenceBundleHandler implements ServerPacketHandler<UserPresenceBundlePacket> {
         @Override
         public void write(UserPresenceBundlePacket packet, BanchoPacketWriter writer, Player player) {
-            List<Integer> userIds = App.server.playerManager.getAll().stream()
+            List<Integer> userIds = App.server.playerManager.getAllSessions().stream()
                     .filter(p -> p.getId() != player.getId())
                     .map(Player::getId)
                     .toList();

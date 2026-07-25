@@ -114,7 +114,7 @@ public class MatchManager {
 
             logger.info("Disposed empty match {}", match);
 
-            server.playerManager.getAll().stream()
+            server.playerManager.getAllSessions().stream()
                     .filter(Player::isInLobby)
                     .forEach(p -> p.sendPacket(new DisposeMatchPacket(match.getMatchId())));
 

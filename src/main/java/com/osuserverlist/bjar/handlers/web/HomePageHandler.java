@@ -54,7 +54,7 @@ public class HomePageHandler implements Handler {
     @Override
     public void handle(@NotNull Context ctx) {
         String html = indexTemplate
-                .replace("%players%", String.valueOf(App.server.playerManager.getAll().size()))
+                .replace("%players%", String.valueOf(App.server.playerManager.getOnlineCount()))
                 .replace("%version%", "bancho.jar <" + BuildInfo.VERSION + ">")
                 .replace("%packets%", packetList)
                 .replace("%domain%", App.server.enviromentConfig.getDomain())

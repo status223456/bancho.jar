@@ -51,7 +51,7 @@ public class OnlineAPIHandler implements Handler {
         int limit = ApiPagination.limit(ctx);
 
         Set<Integer> seen = new HashSet<>();
-        List<Map<String, Object>> all = App.server.playerManager.getAll().stream()
+        List<Map<String, Object>> all = App.server.playerManager.getAllSessions().stream()
                 .filter(player -> !player.isBot())
                 .filter(player -> !player.isTourneyClient())
                 .filter(player -> seen.add(player.getId()))
