@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.irc;
+package com.osuserverlist.bjar.modules.irc;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

@@ -1,10 +1,13 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.StatsEntity;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
@@ -24,15 +27,15 @@ import io.javalin.openapi.OpenApiResponse;
  * stats. Scalar (non-list) endpoint.
  */
 @Host("api.")
-@Path("/api/v1/get_player_info")
+@Path("/api/v1/get_player_details")
 @HttpMethod("GET")
-public class ApiV1PlayerInfoHandler implements Handler {
+public class PlayerDetailsAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Player info",
         description = "A single player's profile and/or per-mode stats.",
-        tags = { "v1" },
+        tags = { "Users" },
         queryParams = {
             @OpenApiParam(name = "id", type = Integer.class, description = "Player id (id or name required)."),
             @OpenApiParam(name = "name", type = String.class, description = "Player name (id or name required)."),
@@ -42,7 +45,7 @@ public class ApiV1PlayerInfoHandler implements Handler {
             @OpenApiResponse(status = "200", content = { @OpenApiContent(from = ApiDto.PlayerInfoResponse.class) }, description = "Player profile and stats"),
             @OpenApiResponse(status = "404", content = { @OpenApiContent(from = ApiDto.ErrorResponse.class) }, description = "Player not found")
         },
-        path = "/api/v1/get_player_info"
+        path = "/api/v1/get_player_details"
     )
     public void handle(@NotNull Context ctx) {
         String scope = ctx.queryParam("scope");

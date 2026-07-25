@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
@@ -30,13 +32,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/search_players")
 @HttpMethod("GET")
-public class ApiV1SearchPlayersHandler implements Handler {
+public class SearchPlayersAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Search players",
-        description = "Search public players by a partial name (priv & 3 = 3).",
-        tags = { "v1" },
+        description = "Search public players by a partial name",
+        tags = { "Users" },
         queryParams = {
             @OpenApiParam(name = "q", type = String.class, description = "Name fragment to search for."),
             @OpenApiParam(name = "offset", type = Integer.class, description = "Zero-based offset into the result set (default 0)."),

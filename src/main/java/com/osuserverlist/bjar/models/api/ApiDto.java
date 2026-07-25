@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.models.api;
 
 import java.util.List;
 import java.util.Map;
@@ -177,6 +177,14 @@ public final class ApiDto {
     }
 
     @Data
+    public static class StatsResponse {
+        private int onlinePlayers;
+        private long totalPlayers;
+        private long maps;
+        private long scores;
+    }
+
+    @Data
     public static class PlayerInfoFull {
         private PlayerInfo info;
         private Map<String, Stats> stats;
@@ -238,14 +246,8 @@ public final class ApiDto {
         private List<MostPlayed> results;
     }
 
-    // ----- scalar (non-paginated) responses -----------------------------
-
-    @Data
-    public static class PlayerCountResponse {
-        private String status;
-        private Counts counts;
-    }
-
+    // ----- scalar (non-paginated) responses -----------------------------#
+    
     @Data
     public static class PlayerInfoResponse {
         private String status;

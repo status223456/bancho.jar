@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,6 +7,9 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
@@ -28,13 +31,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/get_player_most_played")
 @HttpMethod("GET")
-public class ApiV1PlayerMostPlayedHandler implements Handler {
+public class PlayerMostPlayedAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Most played maps",
         description = "A player's most-played beatmaps for a mode. count = distinct maps played.",
-        tags = { "v1" },
+        tags = { "Users" },
         queryParams = {
             @OpenApiParam(name = "id", type = Integer.class, description = "Player id (id or name required)."),
             @OpenApiParam(name = "name", type = String.class, description = "Player name (id or name required)."),

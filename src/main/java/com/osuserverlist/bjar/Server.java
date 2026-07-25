@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 
 import com.osuserverlist.bjar.models.ConfigModels.ServerConfiguration;
 import com.osuserverlist.bjar.models.engine.ProductionLevel;
-import com.osuserverlist.bjar.irc.IrcGateway;
-import com.osuserverlist.bjar.irc.IrcServer;
 import com.osuserverlist.bjar.models.essentials.Player;
 import com.osuserverlist.bjar.modules.calculations.Performance;
+import com.osuserverlist.bjar.modules.irc.IrcGateway;
+import com.osuserverlist.bjar.modules.irc.IrcServer;
 import com.osuserverlist.bjar.modules.main.Application.BuildInfo;
 import com.osuserverlist.bjar.modules.main.Commands;
 import com.osuserverlist.bjar.modules.main.GeoLocation;

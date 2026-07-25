@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.irc;
+package com.osuserverlist.bjar.modules.irc;
 
 import com.osuserverlist.bjar.models.essentials.Channel;
 import com.osuserverlist.bjar.models.essentials.Player;

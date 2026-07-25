@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 
 import com.osuserverlist.bjar.App;
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
 import com.osuserverlist.bjar.modules.main.WebEngine.Path;
@@ -28,13 +30,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/online")
 @HttpMethod("GET")
-public class ApiV1OnlineHandler implements Handler {
+public class OnlineAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "List online players",
         description = "Players currently online (bots and auxiliary tournament sessions excluded, deduplicated by id).",
-        tags = { "v1" },
+        tags = { "Server" },
         queryParams = {
             @OpenApiParam(name = "offset", type = Integer.class, description = "Zero-based offset into the result set (default 0)."),
             @OpenApiParam(name = "limit", type = Integer.class, description = "Maximum results to return, 1-100 (default 50).")

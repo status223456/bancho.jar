@@ -1,10 +1,13 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.BeatmapEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
@@ -24,13 +27,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/get_map_info")
 @HttpMethod("GET")
-public class ApiV1MapInfoHandler implements Handler {
+public class MapInfoAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Map info",
         description = "Metadata for a single beatmap.",
-        tags = { "v1" },
+        tags = { "Maps" },
         queryParams = {
             @OpenApiParam(name = "md5", type = String.class, description = "Beatmap md5 (md5 or id required)."),
             @OpenApiParam(name = "id", type = Integer.class, description = "Beatmap id (md5 or id required).")

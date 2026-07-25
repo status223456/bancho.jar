@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.irc;
+package com.osuserverlist.bjar.modules.irc;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

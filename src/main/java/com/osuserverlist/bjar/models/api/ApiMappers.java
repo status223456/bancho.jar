@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.models.api;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

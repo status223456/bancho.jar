@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.osuserverlist"
-version = "1.1.5-SNAPSHOT"
+version = "1.1.6-SNAPSHOT"
 
 repositories {
     mavenCentral()

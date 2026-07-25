@@ -8,13 +8,13 @@ import java.util.function.Predicate;
 
 import com.osuserverlist.bjar.App;
 import com.osuserverlist.bjar.Server;
-import com.osuserverlist.bjar.irc.IrcPlayer;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.models.essentials.Channel;
 import com.osuserverlist.bjar.models.essentials.Match;
 import com.osuserverlist.bjar.models.essentials.ModeStats;
 import com.osuserverlist.bjar.models.essentials.Player;
 import com.osuserverlist.bjar.models.osu.Privileges;
+import com.osuserverlist.bjar.modules.irc.IrcPlayer;
 import com.osuserverlist.bjar.packets.server.LoginServerPackets.SilenceInfoPacket;
 import com.osuserverlist.bjar.packets.server.UserServerPackets.UserQuitPacket;
 import com.osuserverlist.bjar.repos.UserRepository;

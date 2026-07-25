@@ -1,10 +1,13 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.ScoreEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
@@ -23,15 +26,15 @@ import io.javalin.openapi.OpenApiResponse;
  * Scalar endpoint.
  */
 @Host("api.")
-@Path("/api/v1/get_score_info")
+@Path("/api/v1/get_score_details")
 @HttpMethod("GET")
-public class ApiV1ScoreInfoHandler implements Handler {
+public class ScoreInfoAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Score info",
         description = "A single score with its beatmap embedded.",
-        tags = { "v1" },
+        tags = { "Scores" },
         queryParams = {
             @OpenApiParam(name = "id", type = Integer.class, required = true, description = "Score id.")
         },
@@ -40,7 +43,7 @@ public class ApiV1ScoreInfoHandler implements Handler {
             @OpenApiResponse(status = "400", content = { @OpenApiContent(from = ApiDto.ErrorResponse.class) }, description = "Missing or invalid id"),
             @OpenApiResponse(status = "404", content = { @OpenApiContent(from = ApiDto.ErrorResponse.class) }, description = "Score not found")
         },
-        path = "/api/v1/get_score_info"
+        path = "/api/v1/get_score_details"
     )
     public void handle(@NotNull Context ctx) {
         String idRaw = ctx.queryParam("id");

@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.List;
 import java.util.Map;
@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.ScoreEntity;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
@@ -31,13 +34,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/get_player_scores")
 @HttpMethod("GET")
-public class ApiV1PlayerScoresHandler implements Handler {
+public class PlayerScoresAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Player scores",
         description = "A player's scores. 'best' returns personal bests by pp; 'recent' returns by play time.",
-        tags = { "v1" },
+        tags = { "Users" },
         queryParams = {
             @OpenApiParam(name = "id", type = Integer.class, description = "Player id (id or name required)."),
             @OpenApiParam(name = "name", type = String.class, description = "Player name (id or name required)."),

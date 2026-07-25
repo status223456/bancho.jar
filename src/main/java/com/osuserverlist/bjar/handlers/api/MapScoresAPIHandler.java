@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,9 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiMappers;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.BeatmapEntity;
 import com.osuserverlist.bjar.models.database.ScoreEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
@@ -31,13 +34,13 @@ import io.javalin.openapi.OpenApiResponse;
 @Host("api.")
 @Path("/api/v1/get_map_scores")
 @HttpMethod("GET")
-public class ApiV1MapScoresHandler implements Handler {
+public class MapScoresAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Map scores",
         description = "Submitted leaderboard scores for a beatmap, ordered by score.",
-        tags = { "v1" },
+        tags = { "Scores" },
         queryParams = {
             @OpenApiParam(name = "md5", type = String.class, description = "Beatmap md5 (md5 or id required)."),
             @OpenApiParam(name = "id", type = Integer.class, description = "Beatmap id (md5 or id required)."),

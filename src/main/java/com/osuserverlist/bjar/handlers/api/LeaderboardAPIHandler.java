@@ -1,4 +1,4 @@
-package com.osuserverlist.bjar.handlers.web.api;
+package com.osuserverlist.bjar.handlers.api;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,12 +7,13 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.osuserverlist.bjar.models.api.ApiDto;
+import com.osuserverlist.bjar.models.api.ApiPagination;
 import com.osuserverlist.bjar.models.database.StatsEntity;
 import com.osuserverlist.bjar.models.database.UserEntity;
 import com.osuserverlist.bjar.modules.main.WebEngine.Host;
 import com.osuserverlist.bjar.modules.main.WebEngine.HttpMethod;
 import com.osuserverlist.bjar.modules.main.WebEngine.Path;
-import com.osuserverlist.bjar.repos.UserRepository;
 
 import io.ebean.DB;
 import io.ebean.PagedList;
@@ -23,22 +24,16 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiResponse;
 
-/**
- * GET /api/v1/get_leaderboard — the global ranking for a given mode.
- *
- * <p>Only players with at least one play are listed. Each row carries an
- * absolute {@code rank} computed from the offset.
- */
 @Host("api.")
 @Path("/api/v1/get_leaderboard")
 @HttpMethod("GET")
-public class ApiV1LeaderboardHandler implements Handler {
+public class LeaderboardAPIHandler implements Handler {
 
     @Override
     @OpenApi(
         summary = "Global leaderboard",
         description = "Ranking for a given mode. Each row carries an absolute rank.",
-        tags = { "v1" },
+        tags = { "Server" },
         queryParams = {
             @OpenApiParam(name = "mode", type = Integer.class, description = "Game mode (default 0)."),
             @OpenApiParam(name = "sort", type = String.class, description = "'pp' (default) or 'score'."),
@@ -58,6 +53,7 @@ public class ApiV1LeaderboardHandler implements Handler {
         String orderBy = "score".equalsIgnoreCase(sort) ? "rankedScore desc" : "pp desc";
 
         PagedList<StatsEntity> paged = DB.find(StatsEntity.class)
+                .fetch("user", "name, country")
                 .where()
                 .eq("id.mode", mode)
                 .gt("plays", 0)
@@ -70,7 +66,7 @@ public class ApiV1LeaderboardHandler implements Handler {
         int rank = offset;
         for (StatsEntity stats : paged.getList()) {
             rank++;
-            UserEntity user = UserRepository.findById(stats.getId().getId());
+            UserEntity user = stats.getUser();
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("rank", rank);
             row.put("id", stats.getId().getId());

@@ -7,10 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.osuserverlist.bjar.irc.IrcGateway;
 import com.osuserverlist.bjar.models.database.ChannelEntity;
 import com.osuserverlist.bjar.models.essentials.Channel;
 import com.osuserverlist.bjar.models.essentials.Player;
+import com.osuserverlist.bjar.modules.irc.IrcGateway;
 import com.osuserverlist.bjar.repos.ChannelRepository;
 
 public class ChannelManager {
