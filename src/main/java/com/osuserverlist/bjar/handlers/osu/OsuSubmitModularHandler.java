@@ -47,6 +47,9 @@ public class OsuSubmitModularHandler implements Handler {
 
     private final static Logger logger = LoggerFactory.getLogger(OsuSubmitModularHandler.class);
 
+    /** How long an identical submission is treated as a replay of the previous one. */
+    private static final int DUPLICATE_WINDOW_SECONDS = 60;
+
     @Override
     public void handle(@NotNull Context ctx) throws Exception {
         SubmitResponse submitResponse = SubmitResponse.fromContext(ctx);
@@ -60,7 +63,7 @@ public class OsuSubmitModularHandler implements Handler {
         String decrypted = new String(decryptedBytes, StandardCharsets.UTF_8);
         String[] data = decrypted.split(":");
 
-        if (data.length < 13) {
+        if (data.length < 16) {
             ctx.status(400).result("Malformed decrypted score data.");
             return;
         }
@@ -81,6 +84,13 @@ public class OsuSubmitModularHandler implements Handler {
         }
 
         Score s = Score.fromSubmission(data, p);
+
+        if (!isPlausible(s)) {
+            logger.warn("Rejected an impossible score from player {}: {}", p, decrypted);
+            ctx.status(400).result("Malformed score data.");
+            return;
+        }
+
         GameMode realGameMode = GameMode.fromValue(s.getMode(), s.getMods());
 
         BeatmapEntity beatmap = server.osuAPIHandler.getBeatmapByHash(submitResponse.getUpdatedBeatmapHash());
@@ -94,7 +104,29 @@ public class OsuSubmitModularHandler implements Handler {
         byte[] mapData = OsuMapDownloader.downloadMap(s.getBeatmapId());
         double pp = server.performance.calculate(s, mapData);
         s.setPp(pp);
-        s.setChecksum(Cryptography.generateChecksum(s.toString()));
+        // Keep the checksum the client computed for this play. It covers the
+        // score itself, which makes it a reliable marker of a replayed
+        // submission. Fall back to a server-side value if it is malformed,
+        // since the column is limited to 32 characters.
+        String clientChecksum = data[2] == null ? "" : data[2].trim();
+
+        if (clientChecksum.length() != 32) {
+            clientChecksum = Cryptography.generateChecksum(s.toString());
+        }
+
+        s.setChecksum(clientChecksum);
+
+        if (ScoreRepository.existsRecentByChecksum(
+                p.getId(), s.getChecksum(), LocalDateTime.now().minusSeconds(DUPLICATE_WINDOW_SECONDS))) {
+
+            logger.warn("Ignored a duplicate submission from player {} (checksum {})", p, s.getChecksum());
+
+            // The original submission already produced a response; answering
+            // with an empty body keeps the client quiet instead of showing an
+            // error for what is usually a network retry.
+            ctx.result("");
+            return;
+        }
 
         ScoreEntity bestScoreEntity = ScoreRepository.getBestScore(s.getPlayerId(), beatmap.getMd5(),
                 realGameMode.getValue());
@@ -124,7 +156,8 @@ public class OsuSubmitModularHandler implements Handler {
         scoreEntity.setStatus(scoreStatus);
         scoreEntity.setOnlineChecksum(s.getChecksum());
         scoreEntity.setMods(s.getMods());
-        scoreEntity.setTimeElapsed((int) s.getPlaytime());
+        scoreEntity.setTimeElapsed(
+                s.isPassed() ? submitResponse.getScoreTime() : submitResponse.getFailTime());
         scoreEntity.setPlayTime(LocalDateTime.now());
         scoreEntity.setN300(s.getN300());
         scoreEntity.setN100(s.getN100());
@@ -313,6 +346,31 @@ public class OsuSubmitModularHandler implements Handler {
             }
 
         });
+    }
+
+    /**
+     * Rejects values no client can legitimately produce.
+     *
+     * <p>This deliberately only covers what is impossible rather than what is
+     * merely unlikely: negative counters, a negative total, and an unknown
+     * play mode. Anything requiring knowledge of the beatmap is left to the
+     * recalculation pipeline, where a mistake cannot cost a player a score.</p>
+     */
+    private static boolean isPlausible(Score s) {
+        if (s.getMode() < 0 || s.getMode() > 3) {
+            return false;
+        }
+
+        if (s.getScore() < 0 || s.getMax_combo() < 0) {
+            return false;
+        }
+
+        return s.getN300() >= 0
+                && s.getN100() >= 0
+                && s.getN50() >= 0
+                && s.getNgeki() >= 0
+                && s.getNkatu() >= 0
+                && s.getNmiss() >= 0;
     }
 
     private String addChart(String name, Object prev, Object after) {
