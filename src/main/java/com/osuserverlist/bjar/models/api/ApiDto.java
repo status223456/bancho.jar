@@ -552,6 +552,19 @@ public final class ApiDto {
     // ----- profile extras -----------------------------------------------
 
     @Data
+    public static class CountryCount {
+        private String country;
+        private int players;
+    }
+
+    @Data
+    public static class CountriesResponse {
+        private String status;
+        private int mode;
+        private List<CountryCount> countries;
+    }
+
+    @Data
     public static class PlaycountMonth {
         /** Month as yyyy-MM. */
         private String month;
@@ -563,5 +576,26 @@ public final class ApiDto {
         private String status;
         private int mode;
         private List<PlaycountMonth> months;
+    }
+
+    @Data
+    public static class Achievement {
+        private int id;
+        /** Icon name, without extension, under /medals/client on the assets host. */
+        private String file;
+        private String name;
+        private String description;
+        /** Whether the player this was asked for owns the medal. */
+        private boolean unlocked;
+    }
+
+    @Data
+    public static class AchievementsResponse {
+        private String status;
+        /** Medals the player owns. */
+        private int count;
+        /** Medals that exist on the server. */
+        private int total;
+        private List<Achievement> results;
     }
 }
