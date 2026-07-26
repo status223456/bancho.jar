@@ -171,6 +171,26 @@ public final class ApiDto {
     }
 
     @Data
+    public static class Beatmapset {
+        private int set_id;
+        private int creator_id;
+        private String creator_name;
+        private String artist;
+        private String title;
+        private String subject;
+        private String message;
+        private int status;
+        private int revision;
+        private int topic_id;
+        private boolean has_video;
+        private int filesize;
+        private int filesize_novideo;
+        private String submission_date;
+        private String last_update;
+        private List<Beatmap> difficulties;
+    }
+
+    @Data
     public static class Counts {
         private long online;
         private long total;
@@ -246,6 +266,15 @@ public final class ApiDto {
         private List<MostPlayed> results;
     }
 
+    @Data
+    public static class PaginatedBeatmapsets {
+        private String status;
+        private int offset;
+        private int limit;
+        private long count;
+        private List<Beatmapset> results;
+    }
+
     // ----- scalar (non-paginated) responses -----------------------------#
     
     @Data
@@ -269,5 +298,204 @@ public final class ApiDto {
     @Data
     public static class ErrorResponse {
         private String status;
+    }
+
+    /** {@code { "status": "success" }}, returned by the write endpoints. */
+    @Data
+    public static class SuccessResponse {
+        private String status;
+    }
+
+    // ----- oauth2 --------------------------------------------------------
+
+    @Data
+    public static class TokenRequest {
+        /** {@code password} or {@code refresh_token}. */
+        private String grant_type;
+        private String username;
+        private String password;
+        /** Alternative to {@code password}: the md5 of the password, as the game client sends it. */
+        private String password_md5;
+        private String refresh_token;
+        /** Space separated list, e.g. {@code identify profile}. */
+        private String scope;
+        private String client_id;
+    }
+
+    @Data
+    public static class TokenResponse {
+        private String access_token;
+        private String token_type;
+        private long expires_in;
+        private String refresh_token;
+        private long refresh_expires_in;
+        private String scope;
+    }
+
+    @Data
+    public static class RevokeRequest {
+        /** Omit to revoke whatever the cookies carry. */
+        private String token;
+        /** {@code access_token} or {@code refresh_token} (default). */
+        private String token_type_hint;
+    }
+
+    @Data
+    public static class TokenUser {
+        private int id;
+        private String name;
+        private int priv;
+    }
+
+    @Data
+    public static class UserInfoResponse {
+        private String status;
+        private TokenUser user;
+        private String scope;
+        private String client_id;
+        private long expires_at;
+    }
+
+    /** RFC 6749 error body used by the oauth endpoints. */
+    @Data
+    public static class OAuthErrorResponse {
+        private String error;
+        private String error_description;
+    }
+
+    // ----- self service --------------------------------------------------
+
+    @Data
+    public static class SelfInfo {
+        private int id;
+        private String name;
+        private String country;
+        private int priv;
+        private int clan_id;
+        private int clan_priv;
+        private int preferred_mode;
+        private int play_style;
+        private int creation_time;
+        private int latest_activity;
+        private String email;
+        private long silence_end;
+        private long donor_end;
+        private String userpage_content;
+        private String custom_badge_name;
+        private String custom_badge_icon;
+    }
+
+    @Data
+    public static class SelfResponse {
+        private String status;
+        private SelfInfo info;
+        private Map<String, Stats> stats;
+        private String scope;
+    }
+
+    @Data
+    public static class SelfUpdateRequest {
+        private String userpage_content;
+        private Integer preferred_mode;
+        /** Mouse, keyboard, tablet and touch as a bitmask (0-15). */
+        private Integer play_style;
+        private String custom_badge_name;
+        private String custom_badge_icon;
+    }
+
+    @Data
+    public static class SelfEmailRequest {
+        private String email;
+        private String current_password;
+        /** Alternative to {@code current_password}. */
+        private String current_password_md5;
+    }
+
+    @Data
+    public static class SelfPasswordRequest {
+        private String new_password;
+        private String current_password;
+        private String current_password_md5;
+    }
+
+    @Data
+    public static class SelfDeleteRequest {
+        private String current_password;
+        private String current_password_md5;
+    }
+
+    // ----- moderation and administration ---------------------------------
+
+    @Data
+    public static class RestrictRequest {
+        private int user_id;
+        private String reason;
+    }
+
+    @Data
+    public static class WipeRequest {
+        private int user_id;
+        private int mode;
+    }
+
+    @Data
+    public static class AlertRequest {
+        private String message;
+    }
+
+    @Data
+    public static class AlertResponse {
+        private String status;
+        /** Number of online players the alert reached. */
+        private int delivered;
+    }
+
+    @Data
+    public static class DonatorRequest {
+        private int user_id;
+        /** Duration such as {@code 30d}, {@code 12h} or {@code 0} to remove it. */
+        private String duration;
+    }
+
+    @Data
+    public static class DonatorResponse {
+        private String status;
+        private long donor_end;
+    }
+
+    @Data
+    public static class PrivilegesRequest {
+        private int user_id;
+        /** Privilege names, e.g. {@code ["NOMINATOR", "MODERATOR"]}. */
+        private List<String> privs;
+    }
+
+    @Data
+    public static class PrivilegesResponse {
+        private String status;
+        /** The resulting privilege bitmask. */
+        private int priv;
+    }
+
+    @Data
+    public static class BeatmapStatusRequest {
+        private long beatmap_id;
+        /** Ranked status: -2 graveyard, -1 WIP, 0 pending, 1 ranked, 2 approved, 3 qualified, 4 loved. */
+        private int status;
+        /** Keep the status when the map is updated (default true). */
+        private boolean frozen;
+    }
+
+    @Data
+    public static class CountryRequest {
+        private int user_id;
+        /** Two letter country code. */
+        private String country;
+    }
+
+    @Data
+    public static class NameRequest {
+        private int user_id;
+        private String name;
     }
 }
