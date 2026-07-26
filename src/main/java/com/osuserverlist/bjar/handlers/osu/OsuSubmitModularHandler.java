@@ -33,6 +33,7 @@ import com.osuserverlist.bjar.modules.util.MevlParser;
 import com.osuserverlist.bjar.packets.server.ChatServerPackets.SendMessagePacket;
 import com.osuserverlist.bjar.packets.server.UserServerPackets.UserStatsPacket;
 import com.osuserverlist.bjar.repos.AchievementRepository;
+import com.osuserverlist.bjar.repos.BeatmapRepository;
 import com.osuserverlist.bjar.repos.ScoreRepository;
 import com.osuserverlist.bjar.repos.StatsRepository;
 
@@ -102,20 +103,7 @@ public class OsuSubmitModularHandler implements Handler {
         s.setBeatmapId(beatmap.getId());
 
         byte[] mapData = OsuMapDownloader.downloadMap(s.getBeatmapId());
-
-        // A map file we cannot read must not cost the player their play. Scoring
-        // it as zero pp keeps the submission, the leaderboard entry and the score
-        // counters intact; failing here would answer with a 500 that the client
-        // retries forever, losing the score anyway.
-        double pp = 0.0;
-
-        if (mapData == null || mapData.length == 0) {
-            logger.warn("No .osu file for map <{}>; storing the score of {} without pp",
-                    s.getBeatmapId(), p);
-        } else {
-            pp = server.performance.calculate(s, mapData);
-        }
-
+        double pp = server.performance.calculate(s, mapData);
         s.setPp(pp);
         // Keep the checksum the client computed for this play. It covers the
         // score itself, which makes it a reliable marker of a replayed
@@ -169,8 +157,12 @@ public class OsuSubmitModularHandler implements Handler {
         scoreEntity.setStatus(scoreStatus);
         scoreEntity.setOnlineChecksum(s.getChecksum());
         scoreEntity.setMods(s.getMods());
-        scoreEntity.setTimeElapsed(
-                s.isPassed() ? submitResponse.getScoreTime() : submitResponse.getFailTime());
+        // The client reports the finish time for a pass and the fail time
+        // for a fail, both in milliseconds. This is what the playtime of
+        // the player is built from.
+        s.setTimeElapsed(s.isPassed() ? submitResponse.getScoreTime() : submitResponse.getFailTime());
+
+        scoreEntity.setTimeElapsed(s.getTimeElapsed());
         scoreEntity.setPlayTime(LocalDateTime.now());
         scoreEntity.setN300(s.getN300());
         scoreEntity.setN100(s.getN100());
@@ -197,6 +189,20 @@ public class OsuSubmitModularHandler implements Handler {
             bestScoreEntity.setStatus(0);
             ScoreRepository.save(bestScoreEntity);
         }
+
+        // The counters of the map itself. Every submission is a play, only
+        // a finished one is a pass. Nothing ever called these, so every map
+        // stayed at zero plays no matter how much it was played.
+        if (s.isPassed()) {
+            BeatmapRepository.incrementPlayAndPass(beatmap.getId());
+            beatmap.setPasses((beatmap.getPasses() == null ? 0 : beatmap.getPasses()) + 1);
+        } else {
+            BeatmapRepository.incrementPlays(beatmap.getId());
+        }
+
+        // Kept in sync in memory as well, because the response below hands
+        // the play and pass count back to the client.
+        beatmap.setPlays((beatmap.getPlays() == null ? 0 : beatmap.getPlays()) + 1);
 
         int rank = ScoreRepository.getRank(beatmap.getMd5(), realGameMode.getValue(), s.getScore());
 

@@ -27,7 +27,14 @@ public class Score {
     private boolean passed = false;
     private String grade = "A";
     private int mode = 0;
+    /**
+     * When the play happened, in epoch milliseconds. The client expects a
+     * timestamp in this position of the leaderboard string, so this is not
+     * a duration despite the name.
+     */
     private long playtime = 60000;
+    /** How long the play itself lasted, in milliseconds. */
+    private int timeElapsed = 0;
     private int flags = 0;
     private int mods = 0;
     private String username = "unknown";
