@@ -53,6 +53,11 @@ public final class ApiDto {
         private int latest_activity;
     }
 
+    /**
+     * Per-mode statistics. {@code rank}, {@code country_rank},
+     * {@code level} and {@code level_progress} are derived on request and
+     * only present on get_player_details.
+     */
     @Data
     public static class Stats {
         private int mode;
@@ -497,5 +502,66 @@ public final class ApiDto {
     public static class NameRequest {
         private int user_id;
         private String name;
+    }
+
+    // ----- beatmap sets --------------------------------------------------
+
+    /** A beatmap set as the search and the set endpoint return it. */
+    @Data
+    public static class BeatmapsetSummary {
+        private long set_id;
+        /** "osu!" for a mirrored set, "private" for one submitted here. */
+        private String server;
+        private String artist;
+        private String title;
+        private String creator;
+        /** Only known for sets submitted here. */
+        private Integer creator_id;
+        /** Ranked status of the hardest difficulty. */
+        private int status;
+        private int mode;
+        private float bpm;
+        private int total_length;
+        private String last_update;
+        private long plays;
+        private long passes;
+        private int difficulty_count;
+        /** True while the set can still be downloaded from this server. */
+        private boolean hosted;
+        private Boolean has_video;
+        private Integer revision;
+        private String submission_date;
+        private List<Beatmap> difficulties;
+    }
+
+    @Data
+    public static class PaginatedBeatmapsetSearch {
+        private String status;
+        private int offset;
+        private int limit;
+        private long count;
+        private List<BeatmapsetSummary> results;
+    }
+
+    @Data
+    public static class BeatmapsetResponse {
+        private String status;
+        private BeatmapsetSummary beatmapset;
+    }
+
+    // ----- profile extras -----------------------------------------------
+
+    @Data
+    public static class PlaycountMonth {
+        /** Month as yyyy-MM. */
+        private String month;
+        private int plays;
+    }
+
+    @Data
+    public static class PlaycountsResponse {
+        private String status;
+        private int mode;
+        private List<PlaycountMonth> months;
     }
 }
